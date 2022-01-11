@@ -1,4 +1,4 @@
-import { EnumBaseResultCode } from '@/types/index'
+import { EnumBaseResultCode, IBaseResult } from '@/types/index'
 import dayjs from 'dayjs'
 const DescbyBaseResultCode = {
   [EnumBaseResultCode.Success]: 'ok',
@@ -8,27 +8,23 @@ const DescbyBaseResultCode = {
   [EnumBaseResultCode.BadRequest]: '请求错误'
 }
 
-export default class BaseResult<T> {
-  private code;
-  private msg;
-  private time;
-  private result;
-  constructor (code: EnumBaseResultCode, msg: string, result: T | null = null) {
-    this.code = code
-    this.msg = msg
-    this.result = result
-    this.time = dayjs().format('YYYY-MM-DD HH:mm:ss')
+const createBaseResult = <T>(code: EnumBaseResultCode, msg: string, result: T | null = null): IBaseResult<T> => {
+  return {
+    code,
+    msg,
+    result,
+    time: dayjs().format('YYYY-MM-DD HH:mm:ss')
   }
+}
 
-  static success<T> (result: T) {
-    return new BaseResult<T>(EnumBaseResultCode.Success, DescbyBaseResultCode[EnumBaseResultCode.Success], result)
-  }
+export const success = <T>(result: T) => {
+  return createBaseResult(EnumBaseResultCode.Success, DescbyBaseResultCode[EnumBaseResultCode.Success], result)
+}
 
-  static badRequest (msg: string) {
-    return new BaseResult(EnumBaseResultCode.BadRequest, msg)
-  }
+export const badRequest = (msg: string = DescbyBaseResultCode[EnumBaseResultCode.BadRequest]) => {
+  return createBaseResult(EnumBaseResultCode.BadRequest, msg)
+}
 
-  static Other (code: EnumBaseResultCode) {
-    return new BaseResult(code, DescbyBaseResultCode[code])
-  }
+export const OtherRequest = (code: EnumBaseResultCode) => {
+  return createBaseResult(code, DescbyBaseResultCode[code])
 }
