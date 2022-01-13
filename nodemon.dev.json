@@ -3,7 +3,7 @@
   "ext": "ts",
   "ignore": ["src/**/*.spec.ts", "dist", "node_modules"],
   "env": {
-    "SHOP_NODE_ENV": "localhost"
+    "NODE_ENV": "production"
   },
-  "exec": "ts-node -r tsconfig-paths/register src/app.ts"
+  "exec": "ts-node src/app.ts"
 }

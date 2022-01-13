@@ -1,13 +1,14 @@
-import env from '@/app/dotenv'
+import yshop from '@/yshop'
 import express from 'express'
 import cors from 'cors'
 import shopLog from '@/app/log'
 import shopAccess from '@/app/access'
-import dayjs from 'dayjs'
 import router from '@/routers/router'
 import { notFound, errorResponse } from '@/app/errorHandler'
 
 const app = express()
+
+yshop.app = app
 
 app.use(cors())
 app.use(shopLog)
@@ -18,6 +19,6 @@ app.use('/api/admin', router)
 app.use(notFound)
 app.use(errorResponse)
 
-app.listen(env.serverPort, () => {
-  console.log(`==> ${dayjs().format('YYYY-MM-DD HH:mm:ss')}服务启动`)
+app.listen(yshop.serverPort, () => {
+  console.log(`==> ${yshop.getServerTime()}服务启动`)
 })
