@@ -22,7 +22,7 @@ export interface IUserSchema {
   refreshToken?: IRefreshToken;
 }
 
-export interface ILoginParams {
+export interface IParamsRegister {
   userName: string;
   password: string;
   passwordAgain: string;
@@ -35,4 +35,13 @@ export interface IResponseRegister {
   accessToken: string;
   refreshToken: string;
   expiresIn: number;
+}
+
+export interface IParamsLogin {
+  userName: string;
+  password: string;
+}
+
+export interface IParamsRefreshToken {
+  refreshToken: string;
 }

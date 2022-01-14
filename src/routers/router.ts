@@ -1,8 +1,8 @@
 import express from 'express'
-import common from './common'
+import user from './user'
 
 const router = express.Router()
 
-router.use('/common/v1', common)
+router.use('/user/v1', user)
 
 export default router

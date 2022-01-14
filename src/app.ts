@@ -1,10 +1,10 @@
 import yshop from '@/yshop'
 import express from 'express'
 import cors from 'cors'
-import shopLog from '@/app/log'
-import shopAccess from '@/app/access'
+import shopLog from '@/middleware/log'
+import shopAccess from '@/middleware/access'
+import { notFound, errorResponse } from '@/middleware/errorHandler'
 import router from '@/routers/router'
-import { notFound, errorResponse } from '@/app/errorHandler'
 
 const app = express()
 

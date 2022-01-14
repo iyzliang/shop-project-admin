@@ -3,7 +3,9 @@ import expressJwt from 'express-jwt'
 import unless from 'express-unless'
 
 const unlessPath: unless.pathFilter[] = [
-  '/api/admin/common/v1/register'
+  '/api/admin/user/v1/register',
+  '/api/admin/user/v1/login',
+  '/api/admin/user/v1/refresh-token'
 ]
 
 export default expressJwt({
