@@ -3,7 +3,7 @@ import BaseModel, { GetSchema } from './base'
 
 export default class IdModel extends BaseModel<IUserSchema> {
   getName () {
-    return 'User'
+    return 'user'
   }
 
   getSchema (): GetSchema<IUserSchema> {

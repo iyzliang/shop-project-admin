@@ -1,4 +1,5 @@
 import yshop from '@/yshop'
+import { Request } from 'express'
 import { IYShop, EnumBaseResultCode, IBaseResult } from '@/types'
 import createError from 'http-errors'
 import IdModel from '@/models/id'
@@ -44,5 +45,12 @@ export default class BaseController {
 
   createBadError (msg: string) {
     return createError(EnumBaseResultCode.BadRequest, msg)
+  }
+
+  getUserId (req: Request) {
+    const parts = req.headers.authorization!.split(' ')
+    const credentials = parts[1]
+    const decodeTokenJson = this.$yshop.decodedToken(credentials)
+    return decodeTokenJson && !this.$yshop.lodash.isString(decodeTokenJson) ? parseInt(decodeTokenJson.userId) : 0
   }
 }

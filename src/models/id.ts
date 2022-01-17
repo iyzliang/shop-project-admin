@@ -27,6 +27,12 @@ export default class IdModel extends BaseModel<IId> {
     return user.save()
   }
 
+  private updataCountByModel (model: EnumIdModel, count: number) {
+    return this.MyModel.updateOne({
+      model
+    }, { count }).exec()
+  }
+
   private getCountByModel (model: EnumIdModel) {
     return this.MyModel.findOne({
       model
@@ -36,15 +42,15 @@ export default class IdModel extends BaseModel<IId> {
   async getNextModelCount (model: EnumIdModel) {
     const idItem = await this.getCountByModel(model)
     if (idItem) {
-      return await this.save({
-        model,
-        count: idItem.count + this.stepNumber
-      })
+      const count = idItem.count + this.stepNumber
+      await this.updataCountByModel(model, count)
+      return count
     } else {
-      return await this.save({
+      await this.save({
         model,
         count: this.initNumber
       })
+      return this.initNumber
     }
   }
 }

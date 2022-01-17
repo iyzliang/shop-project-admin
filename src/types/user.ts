@@ -7,28 +7,32 @@ export interface IUserSchema {
   userId: number;
   userName: string;
   password: string;
-  phone?: string;
+  phone: string;
   /**
    * 添加时间
    */
-  addTime?: string;
+  addTime: string;
   /**
    * 修改时间
    */
-  upTime?: string;
+  upTime: string;
   /**
    * 刷新token
    */
-  refreshToken?: IRefreshToken;
+  refreshToken: IRefreshToken;
 }
 
-export interface IParamsRegister {
+export interface IBodyRegister {
   userName: string;
   password: string;
   passwordAgain: string;
   phone?: string;
 }
 
+export interface IBodyLogin {
+  userName: string;
+  password: string;
+}
 export interface IResponseRegister {
   userName: string;
   userId: number;
@@ -37,11 +41,11 @@ export interface IResponseRegister {
   expiresIn: number;
 }
 
-export interface IParamsLogin {
-  userName: string;
-  password: string;
+export interface IBodyRefreshToken {
+  refreshToken: string;
 }
 
-export interface IParamsRefreshToken {
-  refreshToken: string;
+export interface IResponseRefreshToken {
+  accessToken: string;
+  expiresIn: number;
 }

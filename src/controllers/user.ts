@@ -1,22 +1,31 @@
-import { RequestHandler, Request } from 'express'
-import { IParamsRegister, EnumIdModel, IUserSchema, IResponseRegister, IParamsLogin, IParamsRefreshToken } from '@/types'
+import { RequestHandler } from 'express'
+import {
+  IBodyRegister,
+  IResponseRegister,
+  EnumIdModel,
+  IUserSchema,
+  IBodyLogin,
+  IBodyRefreshToken,
+  IResponseRefreshToken,
+  IBaseResult
+} from '@/types'
 import UserModel from '@/models/user'
 import { checkUserName, checkPassword, checkPhone } from '@/utils/check'
 import md5hex from '@/utils/md5hex'
 import BaseController from './base'
 
 export default class UserController extends BaseController {
-  Model: UserModel;
+  Model: UserModel
   constructor () {
     super()
     this.Model = this.$yshop.getInstance<UserModel>(UserModel)
   }
 
-  register: RequestHandler = async (req: Request<{}, {}, IParamsRegister>, res, next) => {
+  register: RequestHandler<{}, IBaseResult<IResponseRegister>, IBodyRegister> = async (req, res, next) => {
     try {
       await this.checkRegisterParams(req.body)
       const { userName, password, phone = '' } = req.body
-      const { count } = await this.$IdModel.getNextModelCount(EnumIdModel.UserId)
+      const count = await this.$IdModel.getNextModelCount(EnumIdModel.UserId)
       const accessToken = this.getAccessToken(count)
       const refreshToken = this.getRefreshToken(count)
       const userDocument: IUserSchema = {
@@ -28,51 +37,39 @@ export default class UserController extends BaseController {
         upTime: this.$yshop.getServerTime(),
         refreshToken: refreshToken
       }
-      const responseRegister: IResponseRegister = {
+      await this.Model.save(userDocument)
+      res.status(200).json(this.successResponse({
         userName,
         userId: count,
         accessToken: accessToken.token,
         refreshToken: refreshToken.token,
         expiresIn: accessToken.expiresIn
-      }
-      await this.Model.save(userDocument)
-      res.status(200).json(this.successResponse(responseRegister))
+      }))
     } catch (error) {
       next(error)
     }
   }
 
-  login: RequestHandler = async (req: Request<{}, {}, IParamsLogin>, res, next) => {
+  login: RequestHandler<{}, IBaseResult<IResponseRegister>, IBodyLogin> = async (req, res, next) => {
     try {
-      const { userName, password } = req.body
-      this.checkLoginParams(req.body)
-      const userDocument = await this.Model.findUserByName(userName)
-      if (userDocument) {
-        const { userName: _userName, password: _password, userId: _userId } = userDocument
-        if (md5hex(password) === _password) {
-          const accessToken = this.getAccessToken(_userId)
-          const refreshToken = this.getRefreshToken(_userId)
-          const responseLogin: IResponseRegister = {
-            userName: _userName,
-            userId: _userId,
-            accessToken: accessToken.token,
-            refreshToken: refreshToken.token,
-            expiresIn: accessToken.expiresIn
-          }
-          await this.Model.updateUserToken(_userId, refreshToken)
-          res.status(200).json(this.successResponse(responseLogin))
-        } else {
-          throw this.createBadError('密码错误，请重新输入')
-        }
-      } else {
-        throw this.createBadError('用户名不存在')
-      }
+      const userDocument = await this.checkLoginParams(req.body)
+      const { userName: _userName, userId: _userId } = userDocument
+      const accessToken = this.getAccessToken(_userId)
+      const refreshToken = this.getRefreshToken(_userId)
+      await this.Model.updateUserToken(_userId, refreshToken)
+      res.status(200).json(this.successResponse({
+        userName: _userName,
+        userId: _userId,
+        accessToken: accessToken.token,
+        refreshToken: refreshToken.token,
+        expiresIn: accessToken.expiresIn
+      }))
     } catch (error) {
       next(error)
     }
   }
 
-  refreshToken: RequestHandler = async (req: Request<{}, {}, IParamsRefreshToken>, res, next) => {
+  refreshToken: RequestHandler<{}, IBaseResult<IResponseRefreshToken>, IBodyRefreshToken> = async (req, res, next) => {
     try {
       const { refreshToken } = req.body
       const _userId = await this.checkRefreshToken(refreshToken)
@@ -108,8 +105,8 @@ export default class UserController extends BaseController {
     }
   }
 
-  private checkRegisterParams = async (params: IParamsRegister) => {
-    const { userName, password, passwordAgain, phone } = params
+  private checkRegisterParams = async (body: IBodyRegister) => {
+    const { userName, password, passwordAgain, phone } = body
     if (!checkUserName(userName)) {
       throw this.createBadError('用户名格式为3-16位数字、字母、中文、_')
     }
@@ -128,17 +125,29 @@ export default class UserController extends BaseController {
     }
   }
 
-  private checkLoginParams = (params: IParamsLogin) => {
-    const { userName, password } = params
+  private checkLoginParams = async (body: IBodyLogin) => {
+    const { userName, password } = body
     if (!userName) {
       throw this.createBadError('用户名不能为空')
     }
     if (!password) {
       throw this.createBadError('密码不能为空')
     }
+    const userDocument = await this.Model.findUserByName(userName)
+    if (userDocument) {
+      if (md5hex(password) !== userDocument.password) {
+        throw this.createBadError('密码错误，请重新输入')
+      }
+      return userDocument
+    } else {
+      throw this.createBadError('用户名不存在')
+    }
   }
 
   private checkRefreshToken = async (refreshToken: string) => {
+    if (!this.$yshop.lodash.isString(refreshToken)) {
+      throw this.createBadError('刷新凭证异常')
+    }
     const decodeTokenJson = this.$yshop.decodedToken(refreshToken)
     const isString = this.$yshop.lodash.isString(decodeTokenJson)
     if (decodeTokenJson && !isString && decodeTokenJson.userId) {

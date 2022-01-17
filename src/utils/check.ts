@@ -9,3 +9,11 @@ export const checkPassword = (password: string): boolean => {
 export const checkPhone = (phone: string): boolean => {
   return /^(13[0-9]|15[012356789]|166|17[3678]|18[0-9]|14[57])[0-9]{8}$/.test(phone)
 }
+
+export const checkSpecLabel = (label: string): boolean => {
+  return !!label && label.length >= 1 && label.length <= 10
+}
+
+export const checkSpecUnit = (unit: string): boolean => {
+  return !!unit && unit.length >= 1 && unit.length <= 5
+}

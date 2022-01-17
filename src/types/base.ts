@@ -64,3 +64,11 @@ export interface IYShop extends IEnv {
   initRefreshToken: (info: string | Buffer | object) => string;
   decodedToken: (token: string) => string | jwt.JwtPayload | null;
 }
+
+export interface IResultList<T> {
+  page: number;
+  perPage: number;
+  totalNumber: number;
+  totalPage: number;
+  data: T[];
+}
