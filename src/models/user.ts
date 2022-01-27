@@ -1,4 +1,4 @@
-import { IUserSchema, IRefreshToken } from '@/types'
+import { IUserSchema } from '@/types'
 import BaseModel, { GetSchema } from './base'
 
 export default class IdModel extends BaseModel<IUserSchema> {
@@ -23,14 +23,7 @@ export default class IdModel extends BaseModel<IUserSchema> {
       },
       phone: String,
       addTime: String,
-      upTime: String,
-      refreshToken: {
-        token: {
-          type: String,
-          default: ''
-        },
-        expiresIn: Number
-      }
+      upTime: String
     }
   }
 
@@ -43,15 +36,5 @@ export default class IdModel extends BaseModel<IUserSchema> {
     return this.MyModel.findOne({
       userName: name
     }).exec()
-  }
-
-  updateUserToken (userId: number, refreshToken: IRefreshToken) {
-    return this.MyModel.updateOne({ userId }, {
-      refreshToken
-    }).exec()
-  }
-
-  findUserById (userId: number) {
-    return this.MyModel.findOne({ userId }).exec()
   }
 }

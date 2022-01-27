@@ -1,8 +1,3 @@
-export interface IRefreshToken {
-  token: string,
-  expiresIn: number
-}
-
 export interface IUserSchema {
   userId: number;
   userName: string;
@@ -16,10 +11,6 @@ export interface IUserSchema {
    * 修改时间
    */
   upTime: string;
-  /**
-   * 刷新token
-   */
-  refreshToken: IRefreshToken;
 }
 
 export interface IBodyRegister {
@@ -48,4 +39,9 @@ export interface IBodyRefreshToken {
 export interface IResponseRefreshToken {
   accessToken: string;
   expiresIn: number;
+}
+
+export interface ITokenModel {
+  token: string,
+  expiresIn: number
 }

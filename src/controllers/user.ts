@@ -7,7 +7,9 @@ import {
   IBodyLogin,
   IBodyRefreshToken,
   IResponseRefreshToken,
-  IBaseResult
+  IBaseResult,
+  EnumCacheKey,
+  ITokenModel
 } from '@/types'
 import UserModel from '@/models/user'
 import { checkUserName, checkPassword, checkPhone } from '@/utils/check'
@@ -21,26 +23,35 @@ export default class UserController extends BaseController {
     this.Model = this.$yshop.getInstance<UserModel>(UserModel)
   }
 
+  /**
+   * 用户注册
+   * @interface /api/admin/user/v1/register
+   * @method POST
+   * @category user
+   * @param {String} userName 用户名，不能为空
+   * @param {String} password 密码，不能为空
+   * @param {String} passwordAgain 确定密码
+   * @param {String} phone 手机号，选填
+   */
   register: RequestHandler<{}, IBaseResult<IResponseRegister>, IBodyRegister> = async (req, res, next) => {
     try {
-      await this.checkRegisterParams(req.body)
-      const { userName, password, phone = '' } = req.body
-      const count = await this.$IdModel.getNextModelCount(EnumIdModel.UserId)
-      const accessToken = this.getAccessToken(count)
-      const refreshToken = this.getRefreshToken(count)
+      const { userName, password, phone = '' } = await this.checkRegisterParams(req.body)
+      const userId = await this.$IdModel.getNextModelCount(EnumIdModel.UserId)
+      const accessToken = this.getAccessToken(userId)
+      const refreshToken = this.getRefreshToken(userId)
+      this.$yshop.myCache.set<ITokenModel>(`${EnumCacheKey.RefreshToken}-${userId}`, refreshToken)
       const userDocument: IUserSchema = {
-        userId: count,
+        userId,
         userName,
         password: md5hex(password),
         phone,
         addTime: this.$yshop.getServerTime(),
-        upTime: this.$yshop.getServerTime(),
-        refreshToken: refreshToken
+        upTime: this.$yshop.getServerTime()
       }
       await this.Model.save(userDocument)
       res.status(200).json(this.successResponse({
         userName,
-        userId: count,
+        userId,
         accessToken: accessToken.token,
         refreshToken: refreshToken.token,
         expiresIn: accessToken.expiresIn
@@ -50,16 +61,23 @@ export default class UserController extends BaseController {
     }
   }
 
+  /**
+   * 登录
+   * @interface /api/admin/user/v1/login
+   * @method POST
+   * @category user
+   * @param {String} userName 用户名，不能为空
+   * @param {String} password 密码，不能为空
+   */
   login: RequestHandler<{}, IBaseResult<IResponseRegister>, IBodyLogin> = async (req, res, next) => {
     try {
-      const userDocument = await this.checkLoginParams(req.body)
-      const { userName: _userName, userId: _userId } = userDocument
-      const accessToken = this.getAccessToken(_userId)
-      const refreshToken = this.getRefreshToken(_userId)
-      await this.Model.updateUserToken(_userId, refreshToken)
+      const { userName, userId } = await this.checkLoginParams(req.body)
+      const accessToken = this.getAccessToken(userId)
+      const refreshToken = this.getRefreshToken(userId)
+      this.$yshop.myCache.set<ITokenModel>(`${EnumCacheKey.RefreshToken}-${userId}`, refreshToken)
       res.status(200).json(this.successResponse({
-        userName: _userName,
-        userId: _userId,
+        userName,
+        userId,
         accessToken: accessToken.token,
         refreshToken: refreshToken.token,
         expiresIn: accessToken.expiresIn
@@ -69,11 +87,19 @@ export default class UserController extends BaseController {
     }
   }
 
+  /**
+   * 刷新token
+   * @interface /api/admin/user/v1/refresh-token
+   * @method POST
+   * @category user
+   * @param {String} userName 用户名，不能为空
+   * @param {String} password 密码，不能为空
+   */
   refreshToken: RequestHandler<{}, IBaseResult<IResponseRefreshToken>, IBodyRefreshToken> = async (req, res, next) => {
     try {
       const { refreshToken } = req.body
-      const _userId = await this.checkRefreshToken(refreshToken)
-      const accessToken = this.getAccessToken(_userId)
+      const userId = await this.checkRefreshToken(refreshToken)
+      const accessToken = this.getAccessToken(userId)
       res.status(200).json(this.successResponse({
         accessToken: accessToken.token,
         expiresIn: accessToken.expiresIn
@@ -83,8 +109,14 @@ export default class UserController extends BaseController {
     }
   }
 
-  private getAccessToken = (id: number) => {
-    const accessExp = this.$yshop.dayjs().add(60 * 60, 's').unix()
+  /**
+   * 生成token
+   * @param {Number} id 用户id
+   * @returns {ITokenModel} token与到期时间
+   */
+  private getAccessToken = (id: number): ITokenModel => {
+    const { accessTokenExp } = this.$yshop
+    const accessExp = this.$yshop.dayjs().add(accessTokenExp, 's').unix()
     return {
       token: this.$yshop.initAccessToken({
         userId: id,
@@ -94,8 +126,14 @@ export default class UserController extends BaseController {
     }
   }
 
-  private getRefreshToken = (id: number) => {
-    const refreshExp = this.$yshop.dayjs().add(60 * 60 * 48, 's').unix()
+  /**
+   * 生成刷新token
+   * @param {Number} id 用户id
+   * @returns {ITokenModel} token与到期时间
+   */
+  private getRefreshToken = (id: number): ITokenModel => {
+    const { refreshTokenExp } = this.$yshop
+    const refreshExp = this.$yshop.dayjs().add(refreshTokenExp, 's').unix()
     return {
       token: this.$yshop.initRefreshToken({
         userId: id,
@@ -105,6 +143,9 @@ export default class UserController extends BaseController {
     }
   }
 
+  /**
+   * 检查注册参数
+   */
   private checkRegisterParams = async (body: IBodyRegister) => {
     const { userName, password, passwordAgain, phone } = body
     if (!checkUserName(userName)) {
@@ -123,8 +164,16 @@ export default class UserController extends BaseController {
     if (users) {
       throw this.createBadError('用户名重复')
     }
+    return {
+      userName,
+      password,
+      phone: phone || ''
+    }
   }
 
+  /**
+   * 检查登录参数
+   */
   private checkLoginParams = async (body: IBodyLogin) => {
     const { userName, password } = body
     if (!userName) {
@@ -144,6 +193,9 @@ export default class UserController extends BaseController {
     }
   }
 
+  /**
+   * 检查刷新token
+   */
   private checkRefreshToken = async (refreshToken: string) => {
     if (!this.$yshop.lodash.isString(refreshToken)) {
       throw this.createBadError('刷新凭证异常')
@@ -151,13 +203,12 @@ export default class UserController extends BaseController {
     const decodeTokenJson = this.$yshop.decodedToken(refreshToken)
     const isString = this.$yshop.lodash.isString(decodeTokenJson)
     if (decodeTokenJson && !isString && decodeTokenJson.userId) {
-      const userDocument = await this.Model.findUserById(decodeTokenJson.userId as number)
-      if (userDocument && userDocument.refreshToken) {
-        const { refreshToken: _refreshToken } = userDocument
-        if (!this.$yshop.dayjs().isBefore(this.$yshop.dayjs.unix(_refreshToken.expiresIn))) {
+      const refreshTokenCache = this.$yshop.myCache.get<ITokenModel>(`${EnumCacheKey.RefreshToken}-${decodeTokenJson.userId}`)
+      if (refreshTokenCache) {
+        if (!this.$yshop.dayjs().isBefore(this.$yshop.dayjs.unix(refreshTokenCache.expiresIn))) {
           throw this.createBadError('刷新凭证已过期')
         }
-        return userDocument.userId
+        return decodeTokenJson.userId
       } else {
         throw this.createBadError('刷新凭证异常')
       }

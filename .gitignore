@@ -2,6 +2,9 @@
 .env.*
 node_modules
 /src/config/*
+dist
+log
+temp
 
 # local env files
 .env.local

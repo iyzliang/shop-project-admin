@@ -3,6 +3,7 @@ import config from '@/config'
 import dayjs from 'dayjs'
 import lodash from 'lodash'
 import jwt from 'jsonwebtoken'
+import NodeCache from 'node-cache'
 
 const env = process.env.SHOP_NODE_ENV as EnumEnv
 const currentEnv = config[env]
@@ -36,9 +37,17 @@ const decodedToken = (token: string) => {
   return jwt.decode(token)
 }
 
+const myCache = new NodeCache()
+
+/**
+ * token过期时间
+ */
+const accessTokenExp = 60 * 60
+const refreshTokenExp = 60 * 60 * 48
+
 const yshop: IYShop = {
   ...currentEnv,
-  ShopNodeEnv: env,
+  shopNodeEnv: env,
   getInstance,
   delInstance,
   dayjs,
@@ -46,7 +55,10 @@ const yshop: IYShop = {
   getServerTime,
   initAccessToken,
   initRefreshToken,
-  decodedToken
+  decodedToken,
+  myCache,
+  accessTokenExp,
+  refreshTokenExp
 }
 
 export default yshop

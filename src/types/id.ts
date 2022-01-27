@@ -1,6 +1,7 @@
 export enum EnumIdModel {
   UserId = 'userId',
-  SpecId = 'specId'
+  SpecId = 'specId',
+  PictureId = 'pictureId'
 }
 
 export interface IId {

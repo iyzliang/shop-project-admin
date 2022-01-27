@@ -20,14 +20,24 @@ export default class SpecController extends BaseController {
     this.Model = this.$yshop.getInstance<SpecModel>(SpecModel)
   }
 
+  /**
+   * 创建规格
+   * @interface /api/admin/spec/v1/specifications
+   * @method POST
+   * @category spec
+   * @param {String} label 规格名称，不能为空
+   * @param {String} unit 单位，不能为空
+   * @param {Number} sort 排序，默认1
+   * @param {Boolean} display 是否展示，默认展示
+   */
   public postSpec: RequestHandler<{}, IBaseResult<ISpecData>, IPostBodySpec> = async (req, res, next) => {
     try {
       const checkData = await this.checkPostSpec(req.body)
-      const count = await this.$IdModel.getNextModelCount(EnumIdModel.SpecId)
+      const specId = await this.$IdModel.getNextModelCount(EnumIdModel.SpecId)
       const userId = this.getUserId(req)
       const specSchema = {
         ...checkData,
-        specId: count,
+        specId,
         addTime: this.$yshop.getServerTime(),
         upTime: this.$yshop.getServerTime(),
         createUserId: userId
@@ -43,6 +53,16 @@ export default class SpecController extends BaseController {
     }
   }
 
+  /**
+   * 获取规格列表
+   * @interface /api/admin/spec/v1/specifications
+   * @method GET
+   * @category spec
+   * @param {Number} page 页数，默认1
+   * @param {Number} perPage 每页数量，默认10
+   * @param {String} label 筛选规格名称
+   * @param {Number} specId 筛选规格ID
+   */
   public getSpec: RequestHandler<IGetParamsSpec, IBaseResult<IResultList<ISpecData>>, {}> = async (req, res, next) => {
     try {
       const { page = 1, perPage = 10, label, specId } = req.params
@@ -64,11 +84,20 @@ export default class SpecController extends BaseController {
     }
   }
 
+  /**
+   * 修改规格
+   * @interface /api/admin/spec/v1/specifications/{specId}
+   * @method PUT
+   * @category spec
+   * @param {String} label 规格名称
+   * @param {String} unit 单位
+   * @param {Number} sort 排序
+   * @param {Boolean} display 是否展示
+   */
   public putSpec: RequestHandler<IPutParamsSpec, IBaseResult<ISpecData>, IPutBodySpec> = async (req, res, next) => {
     try {
-      const updateDoc = await this.checkPutSpec(req.params, req.body)
-      const { specId } = req.params
-      const specDocumet = await this.Model.updateSpecById(parseInt(specId), {
+      const { specId, ...updateDoc } = await this.checkPutSpec(req.params, req.body)
+      const specDocumet = await this.Model.updateSpecById(specId, {
         ...updateDoc,
         upTime: this.$yshop.getServerTime()
       })
@@ -78,6 +107,9 @@ export default class SpecController extends BaseController {
     }
   }
 
+  /**
+   * 检查创建规格参数
+   */
   private checkPostSpec = async (body: IPostBodySpec) => {
     const { label, unit, sort = 1, display = true } = body
     if (!checkSpecLabel(label)) {
@@ -98,6 +130,9 @@ export default class SpecController extends BaseController {
     }
   }
 
+  /**
+   * 检查修改规格参数
+   */
   private checkPutSpec = async (params: IPutParamsSpec, body: IPutBodySpec) => {
     const { specId } = params
     const { label, unit, sort, display } = body
@@ -125,6 +160,9 @@ export default class SpecController extends BaseController {
     if (this.$yshop.lodash.isBoolean(display)) {
       updateDoc.display = display
     }
-    return updateDoc
+    return {
+      ...updateDoc,
+      specId: specDocument.specId
+    }
   }
 }

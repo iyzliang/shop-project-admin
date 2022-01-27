@@ -2,6 +2,7 @@ import { Express } from 'express'
 import dayjs from 'dayjs'
 import lodash from 'lodash'
 import jwt from 'jsonwebtoken'
+import NodeCache from 'node-cache'
 
 export enum EnumBaseResultCode {
   Success = 200,
@@ -43,6 +44,8 @@ export interface IEnv {
   shopDBHost: string;
   shopDBPort: number;
   shopDBName: string;
+  qAccessKey: string;
+  qSecretKey: string;
 }
 export enum EnumEnv {
   Localhost = 'localhost',
@@ -53,7 +56,7 @@ export type IConfig = Record<EnumEnv, IEnv>
 export type GetInstance = <T>(M: new(...arg: any[]) => T, ...arg: any[]) => T
 export type DelInstance = <T>(M: new(...arg: any[]) => T) => void
 export interface IYShop extends IEnv {
-  ShopNodeEnv: EnumEnv;
+  shopNodeEnv: EnumEnv;
   getInstance: GetInstance;
   delInstance: DelInstance;
   app?: Express;
@@ -63,6 +66,9 @@ export interface IYShop extends IEnv {
   initAccessToken: (info: string | Buffer | object) => string;
   initRefreshToken: (info: string | Buffer | object) => string;
   decodedToken: (token: string) => string | jwt.JwtPayload | null;
+  myCache: NodeCache;
+  accessTokenExp: number;
+  refreshTokenExp: number;
 }
 
 export interface IResultList<T> {
